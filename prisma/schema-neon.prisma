@@ -1,0 +1,254 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://neondb_owner:npg_nF1GtboR8BOP@ep-cool-lab-a1scgicy-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String
+  avatar       Media?   @relation("UserAvatar")
+  role         Role     @default(USER)
+  zipCode      String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  country      String?
+  phoneNumber  String?
+  countryCode  String?  // Country code for phone number (e.g., "IN", "US")
+  cart         Cart?
+  orders       Order[]
+  reviews      Review[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([email])
+}
+
+model Product {
+  id          Int           @id @default(autoincrement())
+  sku         String        @unique @db.VarChar(10) // SKU format: SS-NK-001 (up to 10 characters)
+  name        String
+  description String?
+  price       Decimal
+  crossedPrice Decimal?     // Original price before discount (optional)
+  stock       Int
+  images      Media[]       @relation("ProductImages")
+  isAvailable Boolean       @default(true)
+  hasSizing   Boolean       @default(false) // Whether this product supports sizing
+  category    Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId  Int?
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  reviews     Review[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  sizes       ProductSize[]
+  tags        ProductTag[]
+  topPicks    TopPickProduct[]
+
+  @@index([categoryId])
+  @@index([sku])
+}
+
+model Media {
+  id        Int      @id @default(autoincrement())
+  url       String
+  mimeType  String
+  type      String
+  createdAt DateTime @default(now())
+  productId Int?
+  product   Product? @relation("ProductImages", fields: [productId], references: [id], onDelete: Cascade)
+  userId    Int?     @unique
+  user      User?    @relation("UserAvatar", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Size {
+  id       Int           @id @default(autoincrement())
+  name     String        @unique
+  products ProductSize[]
+}
+
+model ProductSize {
+  id        Int     @id @default(autoincrement())
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  size      Size    @relation(fields: [sizeId], references: [id], onDelete: Cascade)
+  sizeId    Int
+  stock     Int     @default(0)
+}
+
+model Tag {
+  id       Int          @id @default(autoincrement())
+  name     String       @unique
+  products ProductTag[]
+}
+
+model ProductTag {
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId     Int
+
+  @@id([productId, tagId])
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Cart {
+  id     Int        @id @default(autoincrement())
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int        @unique
+  items  CartItem[]
+}
+
+model CartItem {
+  id        Int     @id @default(autoincrement())
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cartId    Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  quantity  Int     @default(1)
+}
+
+model Order {
+  id              Int         @id @default(autoincrement())
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          Int
+  items           OrderItem[]
+  reviews         Review[]
+  total           Decimal
+  status          String      @default("pending")
+  paymentMethod   String      @default("razorpay") // "razorpay" or "cod"
+  razorpayOrderId String?
+  paymentId       String?
+  waybillNumber   String?
+  zipCode         String?
+  addressLine1    String?
+  addressLine2    String?
+  city            String?
+  state           String?
+  country         String?
+  phoneNumber     String?
+  email           String?
+  // Pricing breakdown
+  subtotal        Decimal?    // Product subtotal
+  shipping        Decimal?    // Shipping cost
+  tax             Decimal?    // Tax amount
+  offerDiscount   Decimal?    @default(0) // Offer/coupon discount
+  prepaidDiscount Decimal?    @default(0) // Prepaid payment discount
+  appliedDiscount Decimal?    @default(0) // Total discount (for backward compatibility)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  quantity  Int
+  size      String?
+  price     Decimal
+}
+
+model Offer {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  name        String
+  description String?
+  discountType DiscountType
+  discountValue Decimal // Percentage (0-100) or fixed amount
+  minOrderValue Decimal? // Minimum order value to apply offer
+  maxDiscount Decimal? // Maximum discount amount (for percentage discounts)
+  applicableTags Json // Array of tag names that products must have
+  applicableCategories Json // Array of category names that products must have
+  isActive    Boolean  @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  usageLimit  Int? // Maximum number of times this offer can be used
+  usageCount  Int  @default(0) // Current usage count
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  BOGO // Buy One Get One Free
+}
+
+enum HomePageImageType {
+  HERO_CAROUSEL
+  POWER_FEATURES
+  POWERPLAY_CAROUSEL
+  CATEGORY
+}
+
+model HomePageImage {
+  id          Int               @id @default(autoincrement())
+  type        HomePageImageType
+  imageUrl    String            // Desktop image URL (or single image for categories)
+  mobileImageUrl String?        // Mobile image URL (optional, for responsive images)
+  altText     String?           // Alt text for accessibility
+  title       String?           // Title/name (e.g., category name, slide title)
+  subtitle    String?           // Subtitle (e.g., category subtitle)
+  color       String?           // Color code (e.g., for categories)
+  href        String?           // Link URL (e.g., for categories)
+  order       Int               @default(0) // Order/position for carousel items
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([type])
+  @@index([type, order])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  rating    Int      // 1-5 stars
+  comment   String?  // Optional review text
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  orderId   Int?     // Optional: link to specific order
+  isVerified Boolean @default(false) // Whether this review is verified (from actual purchase)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId]) // One review per user per product
+  @@index([productId])
+  @@index([userId])
+  @@index([rating])
+}
+
+model TopPickProduct {
+  id        Int      @id @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int      @unique // Only one top pick entry per product
+  order     Int      @default(0) // Display order (0-3 for 4 products)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([order])
+}

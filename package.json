@@ -1,0 +1,63 @@
+{
+  "name": "shringar-backend",
+  "version": "1.0.0",
+  "description": "Jewellery E-Commerce",
+  "main": "dist/src/index.js",
+  "scripts": {
+    "dev": "nodemon --watch src --ext ts --exec \"ts-node --require tsconfig-paths/register src/index.ts\"",
+    "build": "tsc && tsc-alias",
+    "build:clean": "rm -rf dist && npm run build",
+    "start": "node dist/src/index.js",
+    "prisma": "prisma",
+    "prisma:seed": "prisma db seed",
+    "test:email": "ts-node --require tsconfig-paths/register scripts/test-email.ts",
+    "cleanup:local": "ts-node --require tsconfig-paths/register scripts/cleanup-orphaned-local-images.ts",
+    "cleanup:local:delete": "ts-node --require tsconfig-paths/register scripts/cleanup-orphaned-local-images.ts --delete",
+    "migrate:media:local": "ts-node --require tsconfig-paths/register scripts/migrate-aws-media-to-local.ts",
+    "compress:media:local": "ts-node --require tsconfig-paths/register scripts/compress-images.ts"
+  },
+  "prisma": {
+    "seed": "ts-node --require tsconfig-paths/register prisma/seed.ts"
+  },
+  "author": "Akash",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.16.1",
+    "@types/sharp": "^0.31.1",
+    "axios": "^1.13.1",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^7.0.6",
+    "pg": "^8.18.0",
+    "razorpay": "^2.9.6",
+    "sharp": "^0.34.4",
+    "tsconfig-paths": "^4.2.0",
+    "twilio": "^5.10.4",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.10.12",
+    "@types/nodemailer": "^7.0.2",
+    "@types/pg": "^8.16.0",
+    "@types/uuid": "^10.0.0",
+    "nodemon": "^3.1.10",
+    "prisma": "^6.16.1",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "tsc-alias": "^1.8.10",
+    "typescript": "^5.9.2"
+  }
+}
